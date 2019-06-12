@@ -1,3 +1,6 @@
 [submodule "libs/llvm"]
 	path = libs/llvm
 	url = https://github.com/llvm/llvm-project.git
+[submodule "libs/gtest"]
+	path = libs/gtest
+	url = https://github.com/google/googletest.git
