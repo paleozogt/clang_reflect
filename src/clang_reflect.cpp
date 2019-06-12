@@ -22,6 +22,40 @@ inline std::string getString(CXString cxstring) {
     return str;
 }
 
+inline std::string basename(const std::string &path) {
+    size_t slash_idx= path.find_last_of("\\/");
+    size_t size= path.size();
+    if (slash_idx == size-1) {
+        slash_idx= path.find_last_of("\\/", slash_idx-1);
+        size--;
+    }
+    if (slash_idx != std::string::npos) {
+        size_t start_idx= slash_idx + 1;
+        return path.substr(start_idx, size-start_idx);
+    } else {
+        return path.substr(0, size);
+    }
+}
+
+inline std::string extension(const std::string &path) {
+    size_t dot_idx= path.find_last_of(".");
+    if (dot_idx != std::string::npos) {
+        return path.substr(dot_idx);
+    } else {
+        return "";
+    }
+}
+
+inline std::string replace_ext(const std::string &path, const std::string &ext) {
+    std::string newPath= path;
+    size_t pos= path.find_last_of(".");
+    if (pos != std::string::npos) {
+        return newPath.replace(pos, std::string::npos, ext);
+    } else {
+        return newPath;
+    }
+}
+
 std::vector<std::string> getSystemIncludePaths() {
     char input[PATH_MAX] = "";
     char output[PATH_MAX] = "";
@@ -66,7 +100,8 @@ int main(int argc, const char *argv[]) {
         return 0;
     }
 
-    std::string input = argv[1];
+    std::string inputFile = argv[1];
+    std::string outputFile = replace_ext(basename(inputFile), "") + "Reflect" + extension(inputFile);
 
     // create clang arguments
     auto clangArgsVec = getClangArgs();
@@ -76,7 +111,7 @@ int main(int argc, const char *argv[]) {
     }
 
     CXIndex index = clang_createIndex(0, 0);
-    CXTranslationUnit tu = clang_parseTranslationUnit(index, input.data(),
+    CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
                                                       clangArgs, clangArgsVec.size(),
                                                       nullptr, 0, 0);
 
