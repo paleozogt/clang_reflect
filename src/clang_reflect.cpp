@@ -1,19 +1,27 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
-#include <stdio.h>
-#include <vector>
 #include <string>
+#include <vector>
+#include <set>
 
 #include "clang-c/Index.h"
 
 #define SEARCH_START "#include <...> search starts here:"
 #define SEARCH_END   "End of search list."
 
-inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
+template<typename F>
+inline void ltrim(std::string &s, F &f) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [&](int ch) {
+        return !f(ch);
     }));
+}
+
+template<typename F>
+inline void rtrim(std::string &s, F &f) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [&](int ch) {
+        return !f(ch);
+    }).base(), s.end());
 }
 
 inline std::string getString(CXString cxstring) {
@@ -78,9 +86,9 @@ std::vector<std::string> getSystemIncludePaths() {
     }
     std::getline(stream, line);
     while (stream && line != SEARCH_END) {
-        ltrim(line);
-        std::getline(stream, line);
+        ltrim(line, ::isspace);
         paths.push_back(line);
+        std::getline(stream, line);
     }
 
     return paths;
@@ -94,6 +102,102 @@ std::vector<std::string> getClangArgs() {
     return args;
 }
 
+template<typename F>
+void visitChildren(CXCursor parent, const F &f) {
+    clang_visitChildren(parent, [](CXCursor cursor, CXCursor parent, CXClientData client_data) -> CXChildVisitResult {
+        F &f = *static_cast<F*>(client_data);
+        return f(cursor);
+    }, (CXClientData)&f);
+}
+
+std::vector<std::string> getNamespaces(CXCursor cursor) {
+    std::vector<std::string> namespaces;
+
+    auto parent = clang_getCursorSemanticParent(cursor);
+    while (clang_getCursorKind(parent) != CXCursor_TranslationUnit) {
+        namespaces.push_back(getString(clang_getCursorSpelling(parent)));
+        parent = clang_getCursorLexicalParent(parent);
+    }
+
+    return std::vector<std::string>(namespaces.rbegin(), namespaces.rend());
+}
+
+std::vector<CXCursor> getChildrenOfKind(CXCursor parent, CXCursorKind kind, const std::string &name = "") {
+    std::vector<CXCursor> classes;
+
+    visitChildren(parent, [&](CXCursor cursor) {
+        if (clang_getCursorKind(cursor) == kind &&
+            (name.empty() || name == getString(clang_getCursorSpelling(cursor))))
+        {
+            classes.push_back(cursor);
+        }
+        return CXChildVisit_Recurse;
+    });
+
+    return classes;
+}
+
+std::string getDisplayName(std::string name) {
+    ltrim(name, ::ispunct);
+    rtrim(name, ::ispunct);
+    return name;
+}
+
+std::string indent(size_t indent) {
+    return std::string(indent*4, ' ');
+}
+
+void generateReflector(std::ostream &stream, CXCursor cursor) {
+    auto namespaces = getNamespaces(cursor);
+    size_t nsindent = namespaces.size();
+
+    stream << "#include \""
+           << getString(clang_getTranslationUnitSpelling(clang_Cursor_getTranslationUnit(cursor)))
+           << "\"" << std::endl
+           << std::endl;
+
+    for (size_t idx = 0; idx < namespaces.size(); idx++) {
+        stream << indent(idx) << "namespace " << namespaces[idx] << " {" << std::endl;
+    }
+    stream << std::endl;
+
+    std::vector<std::pair<std::string,std::string>> constsVec = { {"const ", ""}, {"", "const "} };
+    for (const auto &consts : constsVec) {
+        stream << indent(nsindent) << "template<typename F>"
+               << std::endl
+               << indent(nsindent) << "void reflect("
+               << consts.first << getString(clang_getCursorSpelling(cursor))
+               << " &obj"
+               << ", "
+               << consts.second << "F &f"
+               << ") {"
+               << std::endl;
+
+        auto fields = getChildrenOfKind(cursor, CXCursor_FieldDecl);
+        for (const auto &field : fields) {
+            auto spelling = getString(clang_getCursorSpelling(field));
+            stream << indent(nsindent+1)
+                   << "f("
+                   << "\"" << getDisplayName(spelling) << "\""
+                   << ", "
+                   << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\""
+                    << ", "
+                   << "obj." << spelling
+                   << ");"
+                   << std::endl;
+        }
+
+        stream << indent(nsindent)
+               << "}"
+               << std::endl
+               << std::endl;
+    }
+
+    for (size_t idx = 0; idx < namespaces.size(); idx++) {
+        stream << indent(nsindent-idx-1) << "}" << std::endl;
+    }
+}
+
 int main(int argc, const char *argv[]) {
     if (argc <= 1) {
         std::cout << argv[0] << " " << "[INPUT]" << std::endl;
@@ -102,6 +206,7 @@ int main(int argc, const char *argv[]) {
 
     std::string inputFile = argv[1];
     std::string outputFile = replace_ext(basename(inputFile), "") + "Reflect" + extension(inputFile);
+    std::ofstream stream(outputFile, std::ios_base::out|std::ios_base::binary);
 
     // create clang arguments
     auto clangArgsVec = getClangArgs();
@@ -111,11 +216,21 @@ int main(int argc, const char *argv[]) {
     }
 
     CXIndex index = clang_createIndex(0, 0);
+    for (const auto &arg : clangArgs) {
+        std::cout << arg << " ";
+    }
+    std::cout << std::endl;
     CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
                                                       clangArgs, clangArgsVec.size(),
                                                       nullptr, 0, 0);
 
-    std::cout << getString(clang_getTranslationUnitSpelling(tu)) << std::endl;
+    auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
+    for (const auto &clazz : classes) {
+        if (clang_Location_isFromMainFile(clang_getCursorLocation(clazz)) &&
+            !getChildrenOfKind(clazz, CXCursor_FunctionTemplate, "reflect").empty()) {
+            generateReflector(stream, clazz);
+        }
+    }
 
     clang_disposeTranslationUnit(tu);
     clang_disposeIndex(index);
