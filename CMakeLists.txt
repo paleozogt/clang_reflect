@@ -8,11 +8,13 @@ message(STATUS "VERSION ${VERSION}")
 
 set(LLVM_ENABLE_PROJECTS  clang  CACHE STRING "LLVM subprojects")
 set(LIBCLANG_BUILD_STATIC ON     CACHE BOOL   "static libclang")
+set(LLVM_ENABLE_PIC       OFF    CACHE BOOL   "llvm pic")
+set(ENABLE_SHARED         ""     CACHE BOOL   "shared libs")
 set(ENABLE_STATIC         STATIC CACHE BOOL   "static libs")
 add_subdirectory(libs/llvm/llvm)
 
 add_executable(clang_reflect src/ClangReflect.cpp)
-target_link_libraries(clang_reflect PUBLIC libclang_static)
+target_link_libraries(clang_reflect PUBLIC libclang)
 target_compile_options(clang_reflect PUBLIC -DVERSION=${VERSION})
 target_include_directories(clang_reflect PUBLIC 
                             libs/llvm/clang/include
