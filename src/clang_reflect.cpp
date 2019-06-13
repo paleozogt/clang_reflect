@@ -1,10 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#include <climits>
 #include <string>
 #include <vector>
 #include <map>
-#include <map>
+#include <algorithm>
 
 #include "clang-c/Index.h"
 
@@ -34,8 +35,8 @@ inline std::string getString(CXString cxstring) {
 }
 
 std::vector<std::string> getSystemIncludePaths() {
-    char input[PATH_MAX] = "";
-    char output[PATH_MAX] = "";
+    char input[FILENAME_MAX] = "";
+    char output[FILENAME_MAX] = "";
     tmpnam(output);
     tmpnam(input);
 
@@ -43,7 +44,7 @@ std::vector<std::string> getSystemIncludePaths() {
     dummy << std::endl;
     dummy.close();
 
-    char cmd[PATH_MAX*4] = "";
+    char cmd[FILENAME_MAX*4] = "";
     std::snprintf(cmd, sizeof(cmd), "g++ -E -x c++ -v %s > %s 2> %s", input, output, output);
     int exitCode = std::system(cmd);
 
@@ -151,7 +152,7 @@ void generateReflector(std::ostream &stream, CXCursor cursor) {
     }
     stream << std::endl;
 
-    std::vector<std::pair<std::string,std::string>> constsVec = { {"const ", ""}, {"", "const "} };
+    std::vector<std::pair<std::string,std::string>> constsVec = { {"const ", ""}, {"", "const "}, { "const ", "const " }, { "", "" } };
     for (const auto &consts : constsVec) {
         // function definition
         stream << indent(nsindent) << "template<typename F>"
@@ -231,8 +232,8 @@ int main(int argc, const char *argv[]) {
     std::string inputFile = args[""][0];
 
     // create clang arguments
-    auto clangArgsVec = getClangArgs(args[INCLUDE_PATH_FLAG]);
-    const char *clangArgs[clangArgsVec.size()];
+    const auto clangArgsVec = getClangArgs(args[INCLUDE_PATH_FLAG]);
+    std::vector<const char*> clangArgs(clangArgsVec.size());
     for (size_t idx = 0; idx < clangArgsVec.size(); idx++) {
         clangArgs[idx] = clangArgsVec[idx].data();
     }
@@ -243,7 +244,7 @@ int main(int argc, const char *argv[]) {
     }
     std::cout << std::endl;
     CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
-                                                      clangArgs, clangArgsVec.size(),
+                                                      clangArgs.data(), clangArgsVec.size(),
                                                       nullptr, 0,
                                                       CXTranslationUnit_DetailedPreprocessingRecord);
 

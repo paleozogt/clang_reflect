@@ -6,3 +6,4 @@
                                                 \
     template<typename F>                        \
     friend void reflect(const clazz &, F &);    \
+
