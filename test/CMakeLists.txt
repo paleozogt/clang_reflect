@@ -32,5 +32,5 @@ add_test(NAME ${PROJECT_NAME}_unittests
 
 # test target
 add_custom_target(check_${PROJECT_NAME} COMMAND ${CMAKE_CTEST_COMMAND} -V -R ${PROJECT_NAME}
-                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(check_${PROJECT_NAME} ${PROJECT_NAME}_test_runner)
