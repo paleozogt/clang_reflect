@@ -9,6 +9,8 @@ add_subdirectory(libs/llvm/llvm)
 
 add_executable(clang_reflect src/clang_reflect.cpp)
 target_link_libraries(clang_reflect PUBLIC libclang_static)
-target_include_directories(clang_reflect PUBLIC libs/llvm/clang/include)
+target_include_directories(clang_reflect PUBLIC 
+                            libs/llvm/clang/include
+)
 
 add_subdirectory(test)

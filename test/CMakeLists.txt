@@ -10,13 +10,17 @@ target_include_directories(${PROJECT_NAME}_gtest PUBLIC
 )
 
 # generate reflection
-clang_reflect(foobar.hpp)
+clang_reflect(foobase.hpp ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
+clang_reflect(foobar.hpp  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
 
 # test runner
-add_executable(${PROJECT_NAME}_test_runner ${PROJECT_NAME}_tests.cpp foobarReflect.hpp)
+add_executable(${PROJECT_NAME}_test_runner ${PROJECT_NAME}_tests.cpp foobarReflect.hpp foobaseReflect.hpp)
 set_target_properties(${PROJECT_NAME}_test_runner PROPERTIES OUTPUT_NAME test_runner)
 target_link_libraries(${PROJECT_NAME}_test_runner PUBLIC ${PROJECT_NAME}_gtest)
-target_include_directories(${PROJECT_NAME}_test_runner PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME}_test_runner PUBLIC 
+                                ${CMAKE_SOURCE_DIR}/src 
+                                ${CMAKE_CURRENT_BINARY_DIR}
+)
 add_test(NAME ${PROJECT_NAME}_unittests 
          COMMAND $<TARGET_NAME:${PROJECT_NAME}_test_runner>
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

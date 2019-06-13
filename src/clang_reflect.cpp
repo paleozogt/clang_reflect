@@ -3,12 +3,15 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <set>
+#include <map>
+#include <map>
 
 #include "clang-c/Index.h"
 
 #define SEARCH_START "#include <...> search starts here:"
 #define SEARCH_END   "End of search list."
+
+#define INCLUDE_PATH_FLAG "-I"
 
 template<typename F>
 inline void ltrim(std::string &s, F &f) {
@@ -28,40 +31,6 @@ inline std::string getString(CXString cxstring) {
     std::string str = clang_getCString(cxstring);
     clang_disposeString(cxstring);
     return str;
-}
-
-inline std::string basename(const std::string &path) {
-    size_t slash_idx= path.find_last_of("\\/");
-    size_t size= path.size();
-    if (slash_idx == size-1) {
-        slash_idx= path.find_last_of("\\/", slash_idx-1);
-        size--;
-    }
-    if (slash_idx != std::string::npos) {
-        size_t start_idx= slash_idx + 1;
-        return path.substr(start_idx, size-start_idx);
-    } else {
-        return path.substr(0, size);
-    }
-}
-
-inline std::string extension(const std::string &path) {
-    size_t dot_idx= path.find_last_of(".");
-    if (dot_idx != std::string::npos) {
-        return path.substr(dot_idx);
-    } else {
-        return "";
-    }
-}
-
-inline std::string replace_ext(const std::string &path, const std::string &ext) {
-    std::string newPath= path;
-    size_t pos= path.find_last_of(".");
-    if (pos != std::string::npos) {
-        return newPath.replace(pos, std::string::npos, ext);
-    } else {
-        return newPath;
-    }
 }
 
 std::vector<std::string> getSystemIncludePaths() {
@@ -94,12 +63,19 @@ std::vector<std::string> getSystemIncludePaths() {
     return paths;
 }
 
-std::vector<std::string> getClangArgs() {
-    std::vector<std::string> args = { "-std=c++11" };
+std::vector<std::string> getClangArgs(const std::vector<std::string> &includePaths) {
+    std::vector<std::string> args = { "-std=c++11", "-E" };
     for (const auto &path : getSystemIncludePaths()) {
-        args.push_back("-I" + path);
+        args.push_back(INCLUDE_PATH_FLAG + path);
+    }
+    for (const auto &path : includePaths) {
+        args.push_back(INCLUDE_PATH_FLAG + path);
     }
     return args;
+}
+
+std::string getReflectHeaderName(CXCursor clazz) {
+    return getString(clang_getCursorSpelling(clazz)) + "Reflect.hpp";
 }
 
 template<typename F>
@@ -137,10 +113,9 @@ std::vector<CXCursor> getChildrenOfKind(CXCursor parent, CXCursorKind kind, cons
     return classes;
 }
 
-std::string getDisplayName(std::string name) {
-    ltrim(name, ::ispunct);
-    rtrim(name, ::ispunct);
-    return name;
+bool isReflectable(CXCursor clazz) {
+    auto children = getChildrenOfKind(clazz, CXCursor_FunctionTemplate, "reflect");
+    return !children.empty();
 }
 
 std::string indent(size_t indent) {
@@ -148,14 +123,29 @@ std::string indent(size_t indent) {
 }
 
 void generateReflector(std::ostream &stream, CXCursor cursor) {
+    auto bases = getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier);
     auto namespaces = getNamespaces(cursor);
     size_t nsindent = namespaces.size();
+    const std::string reflectMethod = "reflect";
 
+    // include the class definiton
     stream << "#include \""
            << getString(clang_getTranslationUnitSpelling(clang_Cursor_getTranslationUnit(cursor)))
            << "\"" << std::endl
            << std::endl;
 
+    // include generated base class headers
+    for (const auto &base : bases) {
+        CXCursor clazz = clang_getTypeDeclaration(clang_getCursorType(base));
+        if (isReflectable(clazz)) {
+            stream << "#include \""
+                   << getReflectHeaderName(clazz)
+                   << "\"" << std::endl
+                   << std::endl;
+        }
+    }
+
+    // namespaces
     for (size_t idx = 0; idx < namespaces.size(); idx++) {
         stream << indent(idx) << "namespace " << namespaces[idx] << " {" << std::endl;
     }
@@ -163,9 +153,10 @@ void generateReflector(std::ostream &stream, CXCursor cursor) {
 
     std::vector<std::pair<std::string,std::string>> constsVec = { {"const ", ""}, {"", "const "} };
     for (const auto &consts : constsVec) {
+        // function definition
         stream << indent(nsindent) << "template<typename F>"
                << std::endl
-               << indent(nsindent) << "void reflect("
+               << indent(nsindent) << "void " << reflectMethod << "("
                << consts.first << getString(clang_getCursorSpelling(cursor))
                << " &obj"
                << ", "
@@ -173,12 +164,24 @@ void generateReflector(std::ostream &stream, CXCursor cursor) {
                << ") {"
                << std::endl;
 
+        // reflect on base-classes
+        for (const auto &base : bases) {
+            stream << indent(nsindent+1)
+                   << reflectMethod << "("
+                   << "dynamic_cast<" << consts.first << getString(clang_getTypeSpelling(clang_getCursorType(base))) << "&>(obj)"
+                   << ", "
+                   << "f"
+                   << ");"
+                   << std::endl;
+        }
+
+        // reflect on each field
         auto fields = getChildrenOfKind(cursor, CXCursor_FieldDecl);
         for (const auto &field : fields) {
             auto spelling = getString(clang_getCursorSpelling(field));
             stream << indent(nsindent+1)
                    << "f("
-                   << "\"" << getDisplayName(spelling) << "\""
+                   << "\"" << spelling << "\""
                    << ", "
                    << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\""
                     << ", "
@@ -187,29 +190,48 @@ void generateReflector(std::ostream &stream, CXCursor cursor) {
                    << std::endl;
         }
 
+        // close out the function
         stream << indent(nsindent)
                << "}"
                << std::endl
                << std::endl;
     }
 
+    // close out the namespaces
     for (size_t idx = 0; idx < namespaces.size(); idx++) {
         stream << indent(nsindent-idx-1) << "}" << std::endl;
     }
 }
 
+std::map<std::string, std::vector<std::string>> parseCli(int argc, const char *argv[], const std::vector<std::string> &flags) {
+    std::map<std::string, std::vector<std::string>> args;
+    for (size_t idx = 1; idx < argc; idx++) {
+        std::string arg = argv[idx];
+        bool found = false;
+        for (const auto &flag : flags) {
+            if (arg.find(flag, 0) == 0) {
+                args[flag].push_back(arg.substr(flag.size()));
+                found = true;
+                break;
+            }
+        }
+        if (!found) args[""].push_back(arg);
+    }
+
+    return args;
+}
+
 int main(int argc, const char *argv[]) {
-    if (argc <= 1) {
+    auto args = parseCli(argc, argv, { INCLUDE_PATH_FLAG });
+    if (argc <= 2) {
         std::cout << argv[0] << " " << "[INPUT]" << std::endl;
         return 0;
     }
 
-    std::string inputFile = argv[1];
-    std::string outputFile = replace_ext(basename(inputFile), "") + "Reflect" + extension(inputFile);
-    std::ofstream stream(outputFile, std::ios_base::out|std::ios_base::binary);
+    std::string inputFile = args[""][0];
 
     // create clang arguments
-    auto clangArgsVec = getClangArgs();
+    auto clangArgsVec = getClangArgs(args[INCLUDE_PATH_FLAG]);
     const char *clangArgs[clangArgsVec.size()];
     for (size_t idx = 0; idx < clangArgsVec.size(); idx++) {
         clangArgs[idx] = clangArgsVec[idx].data();
@@ -222,12 +244,13 @@ int main(int argc, const char *argv[]) {
     std::cout << std::endl;
     CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
                                                       clangArgs, clangArgsVec.size(),
-                                                      nullptr, 0, 0);
+                                                      nullptr, 0,
+                                                      CXTranslationUnit_DetailedPreprocessingRecord);
 
     auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
     for (const auto &clazz : classes) {
-        if (clang_Location_isFromMainFile(clang_getCursorLocation(clazz)) &&
-            !getChildrenOfKind(clazz, CXCursor_FunctionTemplate, "reflect").empty()) {
+        if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
+            std::ofstream stream(getReflectHeaderName(clazz), std::ios_base::out|std::ios_base::binary);
             generateReflector(stream, clazz);
         }
     }
