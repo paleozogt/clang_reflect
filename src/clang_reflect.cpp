@@ -13,6 +13,7 @@
 #define SEARCH_END   "End of search list."
 
 #define INCLUDE_PATH_FLAG "-I"
+#define HELP_FLAG         "--help"
 
 template<typename F>
 inline void ltrim(std::string &s, F &f) {
@@ -222,42 +223,53 @@ std::map<std::string, std::vector<std::string>> parseCli(int argc, const char *a
     return args;
 }
 
+bool doesFileExist(const std::string &file) {
+    std::ifstream inputStream(file, std::ios_base::in|std::ios_base::binary);
+    return inputStream.good();
+}
+
 int main(int argc, const char *argv[]) {
-    auto args = parseCli(argc, argv, { INCLUDE_PATH_FLAG });
-    if (argc <= 2) {
-        std::cout << argv[0] << " " << "[INPUT]" << std::endl;
+    auto args = parseCli(argc, argv, { INCLUDE_PATH_FLAG, HELP_FLAG });
+    auto inputFiles = args[""];
+    if (inputFiles.empty() || !args[HELP_FLAG].empty()) {
+        std::cout << argv[0] << " " << "[-I/path/to/dir] [INPUT]" << std::endl;
         return 0;
     }
 
-    std::string inputFile = args[""][0];
-
-    // create clang arguments
-    const auto clangArgsVec = getClangArgs(args[INCLUDE_PATH_FLAG]);
-    std::vector<const char*> clangArgs(clangArgsVec.size());
-    for (size_t idx = 0; idx < clangArgsVec.size(); idx++) {
-        clangArgs[idx] = clangArgsVec[idx].data();
-    }
-
-    CXIndex index = clang_createIndex(0, 0);
-    for (const auto &arg : clangArgs) {
-        std::cout << arg << " ";
-    }
-    std::cout << std::endl;
-    CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
-                                                      clangArgs.data(), clangArgsVec.size(),
-                                                      nullptr, 0,
-                                                      CXTranslationUnit_DetailedPreprocessingRecord);
-
-    auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
-    for (const auto &clazz : classes) {
-        if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
-            std::ofstream stream(getReflectHeaderName(clazz), std::ios_base::out|std::ios_base::binary);
-            generateReflector(stream, clazz);
+    for (const auto &inputFile : inputFiles) {
+        if (!doesFileExist(inputFile)) {
+            std::cout << "Unable to open " << inputFile << std::endl;
+            return 1;
         }
-    }
 
-    clang_disposeTranslationUnit(tu);
-    clang_disposeIndex(index);
+        // create clang arguments
+        const auto clangArgsVec = getClangArgs(args[INCLUDE_PATH_FLAG]);
+        std::vector<const char*> clangArgs(clangArgsVec.size());
+        for (size_t idx = 0; idx < clangArgsVec.size(); idx++) {
+            clangArgs[idx] = clangArgsVec[idx].data();
+        }
+
+        CXIndex index = clang_createIndex(0, 0);
+        for (const auto &arg : clangArgs) {
+            std::cout << arg << " ";
+        }
+        std::cout << std::endl;
+        CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
+                                                          clangArgs.data(), clangArgsVec.size(),
+                                                          nullptr, 0,
+                                                          CXTranslationUnit_DetailedPreprocessingRecord);
+
+        auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
+        for (const auto &clazz : classes) {
+            if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
+                std::ofstream stream(getReflectHeaderName(clazz), std::ios_base::out|std::ios_base::binary);
+                generateReflector(stream, clazz);
+            }
+        }
+
+        clang_disposeTranslationUnit(tu);
+        clang_disposeIndex(index);
+    }
 
     return 0;
 }
