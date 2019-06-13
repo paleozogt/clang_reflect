@@ -12,5 +12,17 @@ target_link_libraries(clang_reflect PUBLIC libclang_static)
 target_include_directories(clang_reflect PUBLIC 
                             libs/llvm/clang/include
 )
+install(TARGETS clang_reflect
+        COMPONENT ${PROJECT_NAME}
+        RUNTIME DESTINATION bin
+)
+install(FILES cmake/UseClangReflect.cmake
+        COMPONENT ${PROJECT_NAME}
+        DESTINATION share/${PROJECT_NAME}
+)
+add_custom_target(install_${PROJECT_NAME} 
+                  COMMAND ${CMAKE_COMMAND} --build . --target ${PROJECT_NAME}
+                  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROJECT_NAME} -P cmake_install.cmake
+                  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_subdirectory(test)
