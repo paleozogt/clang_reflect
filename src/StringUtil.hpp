@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <sstream>
 #include <algorithm>
 
 namespace util {
@@ -18,7 +20,17 @@ namespace util {
         }).base(), s.end());
     }
 
-    std::string indent(size_t indent) {
+    inline std::vector<std::string> split(const std::string &str, char token= ',') {
+        std::istringstream ss(str);
+        std::string item;
+        std::vector<std::string> vec;
+        while (std::getline(ss, item, token)) {
+            vec.push_back(item);
+        }
+        return vec;
+    }
+
+    inline std::string indent(size_t indent) {
         return std::string(indent*4, ' ');
     }
 }

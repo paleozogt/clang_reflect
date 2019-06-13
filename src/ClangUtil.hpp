@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "StringUtil.hpp"
+#include "SysUtil.hpp"
 #include "clang-c/Index.h"
 
 namespace clang {
@@ -53,6 +54,11 @@ namespace clang {
     }
 
     inline std::vector<std::string> getSystemIncludePaths() {
+        std::vector<std::string> paths;
+
+#if defined(WIN32)
+        paths = util::split(util::getEnv("INCLUDE"), ';');
+#else
         const static std::string SEARCH_START = "#include <...> search starts here:";
         const static std::string SEARCH_END   = "End of search list.";
 
@@ -69,7 +75,6 @@ namespace clang {
         std::snprintf(cmd, sizeof(cmd), "g++ -E -x c++ -v %s > %s 2> %s", input, output, output);
         int exitCode = std::system(cmd);
 
-        std::vector<std::string> paths;
         std::string line;
         std::ifstream stream(output, std::ios_base::in|std::ios_base::binary);
         while (stream && line != SEARCH_START) {
@@ -81,6 +86,7 @@ namespace clang {
             paths.push_back(line);
             std::getline(stream, line);
         }
+#endif
 
         return paths;
     }
