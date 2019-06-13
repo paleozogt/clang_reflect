@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.10.0)
 
 project(clang_reflect)
 set(CMAKE_CXX_STANDARD 11)
