@@ -13,7 +13,9 @@ public:
     }
 };
 
-TEST(foobar, reflect) {
-    example::foo::Foobar foobar;
+TEST(foobar, logging) {
+    example::foo::Foobar foobar("blah", 1, 2, "boop", 3, 4);
     example::foo::reflect(foobar, FieldLogger());
+    std::cout << std::endl;
 }
+
