@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "string_util.hpp"
+#include "StringUtil.hpp"
 #include "clang-c/Index.h"
 
 namespace clang {

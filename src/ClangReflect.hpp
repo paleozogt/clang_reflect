@@ -1,7 +1,7 @@
 #pragma once
 
-#include "clang_util.hpp"
-#include "file_util.hpp"
+#include "ClangUtil.hpp"
+#include "FileUtil.hpp"
 
 #include <sstream>
 #include <stdexcept>

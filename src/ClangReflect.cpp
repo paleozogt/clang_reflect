@@ -1,6 +1,6 @@
-#include "clang_reflect.hpp"
-#include "cli_util.hpp"
-#include "macro_util.hpp"
+#include "ClangReflect.hpp"
+#include "CliUtil.hpp"
+#include "MacroUtil.hpp"
 
 #include <iostream>
 
