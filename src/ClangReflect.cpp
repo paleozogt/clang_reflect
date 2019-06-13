@@ -17,10 +17,15 @@ int main(int argc, const char *argv[]) {
         return 0;
     }
 
-    clang::ClangReflect generator(args[INCLUDE_PATH_FLAG]);
-    for (const auto &inputFile : inputFiles) {
-        std::cout << generator.getClangCli(inputFile);
-        generator.generate(inputFile);
+    try {
+        clang::ClangReflect generator(args[INCLUDE_PATH_FLAG]);
+        for (const auto &inputFile : inputFiles) {
+            std::cout << generator.getClangCli(inputFile);
+            generator.generate(inputFile);
+        }
+    } catch (std::exception &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
     }
 
     return 0;
