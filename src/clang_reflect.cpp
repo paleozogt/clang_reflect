@@ -15,6 +15,9 @@
 #define INCLUDE_PATH_FLAG "-I"
 #define HELP_FLAG         "--help"
 
+#define meta_stringify(s) stringify(s)
+#define stringify(s) #s
+
 template<typename F>
 inline void ltrim(std::string &s, F &f) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [&](int ch) {
@@ -66,7 +69,7 @@ std::vector<std::string> getSystemIncludePaths() {
 }
 
 std::vector<std::string> getClangArgs(const std::vector<std::string> &includePaths) {
-    std::vector<std::string> args = { "-std=c++11", "-E" };
+    std::vector<std::string> args = { "-std=c++11" };
     for (const auto &path : getSystemIncludePaths()) {
         args.push_back(INCLUDE_PATH_FLAG + path);
     }
@@ -231,8 +234,9 @@ bool doesFileExist(const std::string &file) {
 int main(int argc, const char *argv[]) {
     auto args = parseCli(argc, argv, { INCLUDE_PATH_FLAG, HELP_FLAG });
     auto inputFiles = args[""];
+    std::cout << "clang_reflect v" <<  meta_stringify(VERSION) << std::endl;
     if (inputFiles.empty() || !args[HELP_FLAG].empty()) {
-        std::cout << argv[0] << " " << "[-I/path/to/dir] [INPUT]" << std::endl;
+        std::cout << "Usage: " << argv[0] << " " << "[-I/path/to/dir] [INPUT]" << std::endl;
         return 0;
     }
 
@@ -249,11 +253,14 @@ int main(int argc, const char *argv[]) {
             clangArgs[idx] = clangArgsVec[idx].data();
         }
 
-        CXIndex index = clang_createIndex(0, 0);
+        // log the flags we're using
+        std::cout << "clang++ ";
         for (const auto &arg : clangArgs) {
-            std::cout << arg << " ";
+            std::cout << "\"" << arg << "\" ";
         }
-        std::cout << std::endl;
+        std::cout<< "\"" << inputFile << "\"" << std::endl;
+
+        CXIndex index = clang_createIndex(0, 0);
         CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
                                                           clangArgs.data(), clangArgsVec.size(),
                                                           nullptr, 0,
