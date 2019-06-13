@@ -6,8 +6,9 @@ execute_process(COMMAND git describe OUTPUT_VARIABLE VERSION)
 string(REGEX REPLACE "\n$" "" VERSION "${VERSION}")
 message(STATUS "VERSION ${VERSION}")
 
-set(LLVM_ENABLE_PROJECTS  clang CACHE STRING "LLVM subprojects")
-set(LIBCLANG_BUILD_STATIC ON    CACHE BOOL   "static libclang")
+set(LLVM_ENABLE_PROJECTS  clang  CACHE STRING "LLVM subprojects")
+set(LIBCLANG_BUILD_STATIC ON     CACHE BOOL   "static libclang")
+set(ENABLE_STATIC         STATIC CACHE BOOL   "static libs")
 add_subdirectory(libs/llvm/llvm)
 
 add_executable(clang_reflect src/clang_reflect.cpp)
