@@ -12,6 +12,7 @@ set(LIBCLANG_BUILD_STATIC ON     CACHE BOOL   "static libclang")
 set(LLVM_ENABLE_PIC       OFF    CACHE BOOL   "llvm pic")
 set(ENABLE_SHARED         ""     CACHE BOOL   "shared libs")
 set(ENABLE_STATIC         STATIC CACHE BOOL   "static libs")
+add_definitions(-D_CINDEX_LIB_)
 add_subdirectory(libs/llvm/llvm)
 
 add_executable(clang_reflect src/ClangReflect.cpp)
