@@ -9,8 +9,8 @@
 namespace clang {
     class ClangReflect {
     public:
-        ClangReflect(const std::vector<std::string> &includePaths)
-            : clangArgs(getClangArgs(includePaths))
+        ClangReflect(const std::vector<std::string> &clangArgs)
+            : clangArgs(getClangArgs(clangArgs))
         {
         }
 

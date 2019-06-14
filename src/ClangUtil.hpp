@@ -91,13 +91,13 @@ namespace clang {
         return paths;
     }
 
-    inline std::vector<std::string> getClangArgs(const std::vector<std::string> &includePaths) {
+    inline std::vector<std::string> getClangArgs(const std::vector<std::string> &clangArgs) {
         std::vector<std::string> args = { "-std=c++11" };
         for (const auto &path : getSystemIncludePaths()) {
             args.push_back("-I" + path);
         }
-        for (const auto &path : includePaths) {
-            args.push_back("-I" + path);
+        for (const auto &arg : clangArgs) {
+            args.push_back(arg);
         }
         return args;
     }

@@ -4,13 +4,12 @@
 
 #include <iostream>
 
-#define INCLUDE_PATH_FLAG "-I"
 #define HELP_FLAG         "--help"
 
 int main(int argc, const char *argv[]) {
     std::cout << "clang_reflect v" <<  meta_stringify(VERSION) << std::endl;
 
-    auto args = util::parseCli(argc, argv, { INCLUDE_PATH_FLAG, HELP_FLAG });
+    auto args = util::parseCli(argc, argv);
     auto inputFiles = args[""];
     if (inputFiles.empty() || !args[HELP_FLAG].empty()) {
         std::cout << "Usage: " << argv[0] << " " << "[-I/path/to/dir] [INPUT]" << std::endl;
@@ -18,7 +17,7 @@ int main(int argc, const char *argv[]) {
     }
 
     try {
-        clang::ClangReflect generator(args[INCLUDE_PATH_FLAG]);
+        clang::ClangReflect generator(args["-"]);
         for (const auto &inputFile : inputFiles) {
             std::cout << generator.getClangCli(inputFile);
             generator.generate(inputFile);
