@@ -71,6 +71,11 @@ namespace clang {
             size_t nsindent = namespaces.size();
             const std::string reflectMethod = "reflect";
 
+            // header pragma
+            stream << "#pragma once"
+                   << std::endl
+                   << std::endl;
+
             // include the class definiton
             stream << "#include \""
                    << getString(clang_getTranslationUnitSpelling(clang_Cursor_getTranslationUnit(cursor)))
