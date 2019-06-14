@@ -1,6 +1,6 @@
 #pragma once
 
-#include "foobase.hpp"
+#include "Foobase.hpp"
 
 namespace example {
     namespace foo {

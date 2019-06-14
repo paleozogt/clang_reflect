@@ -1,4 +1,4 @@
-#include "foobar.hpp"
+#include "Foobar.hpp"
 #include "FoobarReflect.hpp"
 
 #include "gtest/gtest.h"
