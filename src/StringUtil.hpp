@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <vector>
 #include <sstream>
+#include <iterator>
 #include <algorithm>
 
 namespace util {
