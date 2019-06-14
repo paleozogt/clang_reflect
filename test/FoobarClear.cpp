@@ -14,6 +14,7 @@ public:
 TEST(foobar, clear) {
     example::foo::Foobar foobar("blah", 1, 2, "boop", 3, 4);
     ASSERT_EQ("blah", foobar.a);
-    example::foo::reflect(foobar, FieldClearer());
+    const FieldClearer clearer;
+    reflect::reflect(foobar, clearer);
     ASSERT_EQ("", foobar.a);
 }

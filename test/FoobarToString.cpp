@@ -45,18 +45,20 @@ inline void FieldInputStreamer::operator()(const std::string &name, const std::s
     std::getline(stream, field);
 }
 
-inline std::string toString(const example::foo::Foobar &foobar) {
+template<typename T>
+inline std::string toString(const T &foobar) {
     std::ostringstream stream;
     FieldOutputStreamer tostringer(stream);
-    example::foo::reflect(foobar, tostringer);
+    reflect::reflect(foobar, tostringer);
     return stream.str();
 }
 
-inline example::foo::Foobar fromString(const std::string &str) {
+template<typename T>
+inline T fromString(const std::string &str) {
     std::istringstream inputStream(str);
     FieldInputStreamer fromstringer(inputStream);
     example::foo::Foobar foobar;
-    example::foo::reflect(foobar, fromstringer);
+    reflect::reflect(foobar, fromstringer);
     return foobar;
 }
 
@@ -65,6 +67,6 @@ TEST(foobar, tostring) {
     ASSERT_EQ("blah\n1\n2\nboop\n3\n4\n", str);
     std::cout << str << std::endl;
 
-    example::foo::Foobar foobar = fromString(str);
+    auto foobar = fromString<example::foo::Foobar>(str);
     ASSERT_EQ("blah\n1\n2\nboop\n3\n4\n", toString(foobar));
 }

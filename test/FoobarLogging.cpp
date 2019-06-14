@@ -15,7 +15,8 @@ public:
 
 TEST(foobar, logging) {
     example::foo::Foobar foobar("blah", 1, 2, "boop", 3, 4);
-    example::foo::reflect(foobar, FieldLogger());
+    const FieldLogger logger;
+    reflect::reflect(foobar, logger);
     std::cout << std::endl;
 }
 

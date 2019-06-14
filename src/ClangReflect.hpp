@@ -57,7 +57,13 @@ namespace clang {
             for (const auto &clazz : classes) {
                 if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
                     std::ofstream stream(getReflectHeaderName(clazz), std::ios_base::out|std::ios_base::binary);
-                    generateReflector(stream, clazz);
+
+                    const std::vector<std::string> namespaces = { "reflect" };
+                    generateReflectorPreamble(stream, clazz);
+                    generateNamespaces(stream, namespaces);
+                    generateReflector(stream, clazz, namespaces.size(), 1);
+                    generateReflector(stream, clazz, namespaces.size(), 2);
+                    generateNamespaceClosures(stream, namespaces);
                 }
             }
 
@@ -65,11 +71,26 @@ namespace clang {
             clang_disposeIndex(index);
         }
 
-        void generateReflector(std::ostream &stream, CXCursor cursor) {
+        void generateNamespaces(std::ostream &stream, const std::vector<std::string> &names) {
+            for (size_t idx = 0; idx < names.size(); idx++) {
+                stream << util::indent(idx)
+                       << "namespace "
+                       << names[idx] << "{"
+                       << std::endl
+                       << std::endl;
+            }
+        }
+
+        void generateNamespaceClosures(std::ostream &stream, const std::vector<std::string> &names) {
+            for (size_t idx = 0; idx < names.size(); idx++) {
+                stream << util::indent(names.size()-idx-1)
+                       << "}"
+                       << std::endl;
+            }
+        }
+
+        void generateReflectorPreamble(std::ostream &stream, CXCursor cursor) {
             auto bases = getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier);
-            auto namespaces = getNamespaces(cursor);
-            size_t nsindent = namespaces.size();
-            const std::string reflectMethod = "reflect";
 
             // header pragma
             stream << "#pragma once"
@@ -92,63 +113,79 @@ namespace clang {
                            << std::endl;
                 }
             }
+        }
 
-            // namespaces
-            for (size_t idx = 0; idx < namespaces.size(); idx++) {
-                stream << util::indent(idx) << "namespace " << namespaces[idx] << " {" << std::endl;
+        void generateReflector(std::ostream &stream, CXCursor cursor, int indent, int numParams) {
+            auto bases = getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier);
+            auto namespaces = getNamespaces(cursor);
+            const std::string reflectMethod = "reflect";
+
+            // function definition
+            stream << util::indent(indent) << "template<";
+            for (int idx = 0; idx < numParams; idx++) {
+                stream << "typename T" << idx << ", ";
             }
-            stream << std::endl;
+            stream << "typename F";
+            for (int idx = 0; idx < numParams; idx++) {
+                stream << ", " << std::endl
+                       << util::indent(indent*2)
+                       << "typename std::enable_if<std::is_same<"
+                            << getString(clang_getTypeSpelling(clang_getCursorType(cursor)))
+                            << ",typename std::remove_cv<T" << idx << ">::type>::value>::type* = nullptr";
+            }
+            stream << std::endl
+                   << util::indent(indent) << ">" << std::endl
+                   << util::indent(indent)
+                   << "void " << reflectMethod << "(";
+            for (int idx = 0; idx < numParams; idx++) {
+                stream << "T" << idx << " &o" << idx << ", ";
+            }
+            stream << "F &f) {"
+                   << std::endl;
 
-            std::vector<std::pair<std::string,std::string>> constsVec = { {"const ", ""}, {"", "const "}, { "const ", "const " }, { "", "" } };
-            for (const auto &consts : constsVec) {
-                // function definition
-                stream << util::indent(nsindent) << "template<typename F>"
-                       << std::endl
-                       << util::indent(nsindent) << "void " << reflectMethod << "("
-                       << consts.first << getString(clang_getCursorSpelling(cursor))
-                       << " &obj"
+            // reflect on base-classes
+            for (const auto &base : bases) {
+                stream << util::indent(indent+1)
+                       << reflectMethod
+                            << "<" << std::endl;
+                for (int idx = 0; idx < numParams; idx++) {
+                    stream << util::indent(indent*3)
+                           << "typename std::conditional<std::is_const<T" << idx << ">::value,"
+                                   << "const " << getString(clang_getTypeSpelling(clang_getCursorType(base))) << ","
+                                   << getString(clang_getTypeSpelling(clang_getCursorType(base)))
+                               << ">::type"
+                           << "," << std::endl;
+                }
+                stream << util::indent(indent*3) << "F" << std::endl
+                       << util::indent(indent+1) << ">(";
+                for (int idx = 0; idx < numParams; idx++) {
+                    stream << "o" << idx << ", ";
+                }
+                stream << "f);"
+                       << std::endl;
+            }
+
+            // reflect on each field
+            auto fields = getChildrenOfKind(cursor, CXCursor_FieldDecl);
+            for (const auto &field : fields) {
+                auto spelling = getString(clang_getCursorSpelling(field));
+                stream << util::indent(indent+1)
+                       << "f("
+                       << "\"" << spelling << "\""
                        << ", "
-                       << consts.second << "F &f"
-                       << ") {"
-                       << std::endl;
-
-                // reflect on base-classes
-                for (const auto &base : bases) {
-                    stream << util::indent(nsindent+1)
-                           << reflectMethod << "("
-                           << "dynamic_cast<" << consts.first << getString(clang_getTypeSpelling(clang_getCursorType(base))) << "&>(obj)"
-                           << ", "
-                           << "f"
-                           << ");"
-                           << std::endl;
+                       << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\"";
+                for (int idx = 0; idx < numParams; idx++) {
+                    stream << ", o" << idx << "." << spelling;
                 }
-
-                // reflect on each field
-                auto fields = getChildrenOfKind(cursor, CXCursor_FieldDecl);
-                for (const auto &field : fields) {
-                    auto spelling = getString(clang_getCursorSpelling(field));
-                    stream << util::indent(nsindent+1)
-                           << "f("
-                           << "\"" << spelling << "\""
-                           << ", "
-                           << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\""
-                           << ", "
-                           << "obj." << spelling
-                           << ");"
-                           << std::endl;
-                }
-
-                // close out the function
-                stream << util::indent(nsindent)
-                       << "}"
-                       << std::endl
+                stream << ");"
                        << std::endl;
             }
 
-            // close out the namespaces
-            for (size_t idx = 0; idx < namespaces.size(); idx++) {
-                stream << util::indent(nsindent-idx-1) << "}" << std::endl;
-            }
+            // close out the function
+            stream << util::indent(indent)
+                   << "}"
+                   << std::endl
+                   << std::endl;
         }
 
     protected:
