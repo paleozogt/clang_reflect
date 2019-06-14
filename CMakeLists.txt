@@ -7,6 +7,7 @@ string(REGEX REPLACE "\n$" "" VERSION "${VERSION}")
 message(STATUS "VERSION ${VERSION}")
 
 set(LLVM_ENABLE_PROJECTS  clang  CACHE STRING "LLVM subprojects")
+set(LLVM_USE_CRT_RELEASE  MT     CACHE STRING "LLVM CRT")
 set(LIBCLANG_BUILD_STATIC ON     CACHE BOOL   "static libclang")
 set(LLVM_ENABLE_PIC       OFF    CACHE BOOL   "llvm pic")
 set(ENABLE_SHARED         ""     CACHE BOOL   "shared libs")
