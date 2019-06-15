@@ -71,8 +71,10 @@ namespace clang {
         dummy << std::endl;
         dummy.close();
 
+        std::string gpp = util::getEnv("CXX", util::getEnv("CC", "g++"));
+
         char cmd[FILENAME_MAX*4] = "";
-        std::snprintf(cmd, sizeof(cmd), "g++ -E -x c++ -v %s > %s 2> %s", input, output, output);
+        std::snprintf(cmd, sizeof(cmd), "%s -E -x c++ -v %s > %s 2> %s", gpp.data(), input, output, output);
         int exitCode = std::system(cmd);
 
         std::string line;
