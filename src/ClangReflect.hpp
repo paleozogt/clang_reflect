@@ -53,6 +53,19 @@ namespace clang {
                                                               nullptr, 0,
                                                               CXTranslationUnit_DetailedPreprocessingRecord);
 
+            const unsigned diagnosticOptions = CXDiagnostic_DisplaySourceLocation |
+                                               CXDiagnostic_DisplayColumn |
+                                               CXDiagnostic_DisplayOption |
+                                               CXDiagnostic_DisplaySourceRanges |
+                                               CXDiagnostic_DisplayCategoryId |
+                                               CXDiagnostic_DisplayCategoryName;
+
+            unsigned numDiagnostics = clang_getNumDiagnostics(tu);
+            if (numDiagnostics > 0) {
+                auto diagnostic = clang_getDiagnostic(tu, 0);
+                throw std::runtime_error(getString(clang_formatDiagnostic(diagnostic, diagnosticOptions)));
+            }
+
             auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
             for (const auto &clazz : classes) {
                 if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
