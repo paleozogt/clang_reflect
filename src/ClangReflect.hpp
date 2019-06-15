@@ -133,7 +133,7 @@ namespace clang {
             // function definition
             stream << util::indent(indent) << "template<";
             for (int idx = 0; idx < numParams; idx++) {
-                stream << "typename T" << idx << ", ";
+                stream << "typename T" << idx+1 << ", ";
             }
             stream << "typename F>" << std::endl
                    << util::indent(indent)
@@ -141,7 +141,7 @@ namespace clang {
                    << getString(clang_getTypeSpelling(clang_getCursorType(cursor))) << "::"
                    << reflectMethod << "(";
             for (int idx = 0; idx < numParams; idx++) {
-                stream << "T" << idx << " &o" << idx << ", ";
+                stream << "T" << idx+1 << " &o" << idx+1 << ", ";
             }
             stream << "F &f) {"
                    << std::endl;
@@ -154,7 +154,7 @@ namespace clang {
                             << "<" << std::endl;
                 for (int idx = 0; idx < numParams; idx++) {
                     stream << util::indent(indent+2)
-                           << "typename std::conditional<std::is_const<T" << idx << ">::value,"
+                           << "typename std::conditional<std::is_const<T" << idx+1 << ">::value,"
                                    << "const " << getString(clang_getTypeSpelling(clang_getCursorType(base))) << ","
                                    << getString(clang_getTypeSpelling(clang_getCursorType(base)))
                                << ">::type"
@@ -163,7 +163,7 @@ namespace clang {
                 stream << util::indent(indent+2) << "F" << std::endl
                        << util::indent(indent+1) << ">(";
                 for (int idx = 0; idx < numParams; idx++) {
-                    stream << "o" << idx << ", ";
+                    stream << "o" << idx+1 << ", ";
                 }
                 stream << "f);"
                        << std::endl;
@@ -179,7 +179,7 @@ namespace clang {
                        << ", "
                        << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\"";
                 for (int idx = 0; idx < numParams; idx++) {
-                    stream << ", o" << idx << "." << spelling;
+                    stream << ", o" << idx+1 << "." << spelling;
                 }
                 stream << ");"
                        << std::endl;
