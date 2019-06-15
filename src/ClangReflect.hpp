@@ -123,6 +123,11 @@ namespace clang {
                            << std::endl;
                 }
             }
+
+            // type traits
+            stream << "#include <type_traits>" 
+                   << std::endl
+                   << std::endl;
         }
 
         void generateReflector(std::ostream &stream, CXCursor cursor, int indent, int numParams) {
