@@ -135,16 +135,7 @@ namespace clang {
             for (int idx = 0; idx < numParams; idx++) {
                 stream << "typename T" << idx << ", ";
             }
-            stream << "typename F";
-            for (int idx = 0; idx < numParams; idx++) {
-                stream << ", " << std::endl
-                       << util::indent(indent+1)
-                       << "typename std::enable_if<std::is_same<"
-                            << getString(clang_getTypeSpelling(clang_getCursorType(cursor)))
-                            << ",typename std::remove_cv<T" << idx << ">::type>::value>::type* = nullptr";
-            }
-            stream << std::endl
-                   << util::indent(indent) << ">" << std::endl
+            stream << "typename F>" << std::endl
                    << util::indent(indent)
                    << "void " 
                    << getString(clang_getTypeSpelling(clang_getCursorType(cursor))) << "::"
