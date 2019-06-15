@@ -11,10 +11,15 @@ public:
     }
 };
 
+template<typename T>
+void clear(T &val) {
+    FieldClearer clearer;
+    T::reflect(val, clearer);
+}
+
 TEST(foobar, clear) {
     example::foo::Foobar foobar("blah", 1, 2, "boop", 3, 4);
     ASSERT_EQ("blah", foobar.a);
-    const FieldClearer clearer;
-    reflect::reflect(foobar, clearer);
+    clear(foobar);
     ASSERT_EQ("", foobar.a);
 }

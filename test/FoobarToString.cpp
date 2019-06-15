@@ -46,10 +46,10 @@ inline void FieldInputStreamer::operator()(const std::string &name, const std::s
 }
 
 template<typename T>
-inline std::string toString(const T &foobar) {
+inline std::string toString(const T &val) {
     std::ostringstream stream;
     FieldOutputStreamer tostringer(stream);
-    reflect::reflect(foobar, tostringer);
+    T::reflect(val, tostringer);
     return stream.str();
 }
 
@@ -57,9 +57,9 @@ template<typename T>
 inline T fromString(const std::string &str) {
     std::istringstream inputStream(str);
     FieldInputStreamer fromstringer(inputStream);
-    example::foo::Foobar foobar;
-    reflect::reflect(foobar, fromstringer);
-    return foobar;
+    T val;
+    T::reflect(val, fromstringer);
+    return val;
 }
 
 TEST(foobar, tostring) {

@@ -16,7 +16,7 @@ public:
 template<typename T>
 bool operator==(const T &a, const T &b) {
     FieldEqualityChecker checker;
-    reflect::reflect(a, b, checker);
+    T::reflect(a, b, checker);
     return checker.equals;
 }
 

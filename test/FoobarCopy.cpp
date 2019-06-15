@@ -3,7 +3,7 @@
 
 #include "gtest/gtest.h"
 
-class FieldCopyer {
+class FieldCopier {
 public:
     template<typename T>
     void operator()(const std::string &name, const std::string &type, const T &from, T &to) const {
@@ -13,8 +13,8 @@ public:
 
 template<typename T>
 void copy(const T &from, T &to) {
-    FieldCopyer checker;
-    reflect::reflect(from, to, checker);
+    FieldCopier copier;
+    T::reflect(from, to, copier);
 }
 
 TEST(foobar, copy) {

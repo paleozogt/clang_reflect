@@ -58,12 +58,9 @@ namespace clang {
                 if (isReflectable(clazz) && clang_Location_isFromMainFile(clang_getCursorLocation(clazz))) {
                     std::ofstream stream(getReflectHeaderName(clazz), std::ios_base::out|std::ios_base::binary);
 
-                    const std::vector<std::string> namespaces = { "reflect" };
                     generateReflectorPreamble(stream, clazz);
-                    generateNamespaces(stream, namespaces);
-                    generateReflector(stream, clazz, namespaces.size(), 1);
-                    generateReflector(stream, clazz, namespaces.size(), 2);
-                    generateNamespaceClosures(stream, namespaces);
+                    generateReflector(stream, clazz, 0, 1);
+                    generateReflector(stream, clazz, 0, 2);
                 }
             }
 
@@ -128,7 +125,7 @@ namespace clang {
             stream << "typename F";
             for (int idx = 0; idx < numParams; idx++) {
                 stream << ", " << std::endl
-                       << util::indent(indent*2)
+                       << util::indent(indent+1)
                        << "typename std::enable_if<std::is_same<"
                             << getString(clang_getTypeSpelling(clang_getCursorType(cursor)))
                             << ",typename std::remove_cv<T" << idx << ">::type>::value>::type* = nullptr";
@@ -136,7 +133,9 @@ namespace clang {
             stream << std::endl
                    << util::indent(indent) << ">" << std::endl
                    << util::indent(indent)
-                   << "void " << reflectMethod << "(";
+                   << "void " 
+                   << getString(clang_getTypeSpelling(clang_getCursorType(cursor))) << "::"
+                   << reflectMethod << "(";
             for (int idx = 0; idx < numParams; idx++) {
                 stream << "T" << idx << " &o" << idx << ", ";
             }
@@ -146,17 +145,18 @@ namespace clang {
             // reflect on base-classes
             for (const auto &base : bases) {
                 stream << util::indent(indent+1)
+                       << getString(clang_getTypeSpelling(clang_getCursorType(base))) << "::"
                        << reflectMethod
                             << "<" << std::endl;
                 for (int idx = 0; idx < numParams; idx++) {
-                    stream << util::indent(indent*3)
+                    stream << util::indent(indent+2)
                            << "typename std::conditional<std::is_const<T" << idx << ">::value,"
                                    << "const " << getString(clang_getTypeSpelling(clang_getCursorType(base))) << ","
                                    << getString(clang_getTypeSpelling(clang_getCursorType(base)))
                                << ">::type"
                            << "," << std::endl;
                 }
-                stream << util::indent(indent*3) << "F" << std::endl
+                stream << util::indent(indent+2) << "F" << std::endl
                        << util::indent(indent+1) << ">(";
                 for (int idx = 0; idx < numParams; idx++) {
                     stream << "o" << idx << ", ";

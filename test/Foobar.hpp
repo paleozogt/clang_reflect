@@ -16,6 +16,16 @@ namespace example {
 
             REFLECT_DECL(Foobar);
 
+            std::string getD() const { return d; }
+            void setD(const std::string &val) { d = val; }
+
+            uint32_t getE() const { return e; }
+            void setE(const uint32_t &val) { e = val; }
+
+            float getF() const { return f; }
+            void setF(const float &val) { f = val; }
+
+        protected:
             std::string d;
             uint32_t e = 0;
             float f = 0;
