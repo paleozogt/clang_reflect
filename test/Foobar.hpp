@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Foobase.hpp"
+#include "Foobaz.hpp"
 
 namespace example {
     namespace foo {
@@ -8,7 +8,8 @@ namespace example {
         public:
             Foobar(const std::string &a = "", uint32_t b = 0, float c = 0,
                    const std::string &d = "", uint32_t e = 0, float f = 0)
-                : Foobase(a, b, c), d(d), e(e), f(f)
+                : Foobase(a, b, c), d(d), e(e), f(f),
+                  foobaz(a, b, c, d, e, f)
             {
             }
 
@@ -29,6 +30,9 @@ namespace example {
             std::string d;
             uint32_t e = 0;
             float f = 0;
+
+        public:
+            Foobaz foobaz;
         };
     }
 }

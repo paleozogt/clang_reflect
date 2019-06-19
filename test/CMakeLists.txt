@@ -12,11 +12,12 @@ target_include_directories(${PROJECT_NAME}_gtest PUBLIC
 
 # generate reflection
 clang_reflect(Foobase.hpp ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
+clang_reflect(Foobaz.hpp  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
 clang_reflect(Foobar.hpp  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
 
 # test runner
 file(GLOB_RECURSE test_srcs *.cpp)
-add_executable(${PROJECT_NAME}_test_runner ${test_srcs} FoobarReflect.hpp FoobaseReflect.hpp)
+add_executable(${PROJECT_NAME}_test_runner ${test_srcs} FoobarReflect.hpp FoobazReflect.hpp FoobaseReflect.hpp)
 set_target_properties(${PROJECT_NAME}_test_runner PROPERTIES OUTPUT_NAME test_runner)
 target_link_libraries(${PROJECT_NAME}_test_runner PUBLIC ${PROJECT_NAME}_gtest)
 if (UNIX)

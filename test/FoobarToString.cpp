@@ -6,31 +6,53 @@
 #include <iostream>
 #include <sstream>
 
-class FieldOutputStreamer {
+/**
+ * FieldWriter/FieldReader define a naive tostring/fromstring serialization scheme.
+ */
+
+class FieldWriter {
 public:
-    FieldOutputStreamer(std::ostream &stream)
+    FieldWriter(std::ostream &stream)
         : stream(stream)
     {
     }
 
     std::ostream &stream;
 
-    template<typename T>
+    template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
     void operator()(const std::string &name, const std::string &type, const T &field) {
         stream << field << std::endl;
     }
+
+    template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
+    void operator()(const std::string &name, const std::string &type, const T &field) {
+        stream << toString(field);
+    }
+
+    template<typename T>
+    inline static void toStream(const T &val, std::ostream &stream) {
+        FieldWriter tostringer(stream);
+        T::reflect(val, tostringer);
+    }
+
+    template<typename T>
+    inline static std::string toString(const T &val) {
+        std::ostringstream stream;
+        toStream(val, stream);
+        return stream.str();
+    }
 };
 
-class FieldInputStreamer {
+class FieldReader {
 public:
-    FieldInputStreamer(std::istream &stream)
+    FieldReader(std::istream &stream)
             : stream(stream)
     {
     }
 
     std::istream &stream;
 
-    template<typename T>
+    template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
     void operator()(const std::string &name, const std::string &type, T &field) {
         std::string line;
         std::getline(stream, line);
@@ -38,35 +60,36 @@ public:
         std::istringstream input(line);
         input >> field;
     }
+
+    template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
+    void operator()(const std::string &name, const std::string &type, T &field) {
+        field = fromStream<T>(stream);
+    }
+
+    void operator()(const std::string &name, const std::string &type, std::string &field) {
+        std::getline(stream, field);
+    }
+
+    template<class T>
+    inline static T fromStream(std::istream &stream) {
+        FieldReader fromstringer(stream);
+        T val;
+        T::reflect(val, fromstringer);
+        return val;
+    }
+
+    template<class T>
+    inline static T fromString(const std::string &str) {
+        std::istringstream stream(str);
+        return fromStream<T>(stream);
+    }
 };
 
-template<>
-inline void FieldInputStreamer::operator()(const std::string &name, const std::string &type, std::string &field) {
-    std::getline(stream, field);
-}
-
-template<typename T>
-inline std::string toString(const T &val) {
-    std::ostringstream stream;
-    FieldOutputStreamer tostringer(stream);
-    T::reflect(val, tostringer);
-    return stream.str();
-}
-
-template<typename T>
-inline T fromString(const std::string &str) {
-    std::istringstream inputStream(str);
-    FieldInputStreamer fromstringer(inputStream);
-    T val;
-    T::reflect(val, fromstringer);
-    return val;
-}
-
 TEST(foobar, tostring) {
-    std::string str = toString(example::foo::Foobar("blah", 1, 2, "boop", 3, 4));
-    ASSERT_EQ("blah\n1\n2\nboop\n3\n4\n", str);
+    std::string str = FieldWriter::toString(example::foo::Foobar("blah", 1, 2, "boop", 3, 4));
     std::cout << str << std::endl;
+    EXPECT_EQ("blah\n1\n2\nboop\n3\n4\nblah\n1\n2\nboop\n3\n4\n", str);
 
-    auto foobar = fromString<example::foo::Foobar>(str);
-    ASSERT_EQ("blah\n1\n2\nboop\n3\n4\n", toString(foobar));
+    auto foobar = FieldReader::fromString<example::foo::Foobar>(str);
+    ASSERT_EQ("blah\n1\n2\nboop\n3\n4\nblah\n1\n2\nboop\n3\n4\n", FieldWriter::toString(foobar));
 }
