@@ -100,8 +100,6 @@ namespace clang {
         }
 
         void generateReflectorPreamble(std::ostream &stream, CXCursor cursor) {
-            auto bases = getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier);
-
             // header pragma
             stream << "#pragma once"
                    << std::endl
@@ -114,15 +112,26 @@ namespace clang {
                    << std::endl;
 
             // include generated base class headers
-            for (const auto &base : bases) {
+            for (const auto &base : getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier)) {
                 CXCursor clazz = clang_getTypeDeclaration(clang_getCursorType(base));
                 if (isReflectable(clazz)) {
                     stream << "#include \""
                            << getReflectHeaderName(clazz)
-                           << "\"" << std::endl
-                           << std::endl;
+                           << "\"" << std::endl;
                 }
             }
+
+            // include generated field headers
+            for (const auto &field : getChildrenOfKind(cursor, CXCursor_FieldDecl)) {
+                CXCursor clazz = clang_getTypeDeclaration(clang_getCursorType(field));
+                if (isReflectable(clazz)) {
+                    stream << "#include \""
+                           << getReflectHeaderName(clazz)
+                           << "\"" << std::endl;
+                }
+            }
+
+            stream << std::endl;
 
             // type traits
             stream << "#include <type_traits>" 
