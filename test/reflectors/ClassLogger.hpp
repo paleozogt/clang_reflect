@@ -1,13 +1,12 @@
-#include "Foobar.hpp"
-#include "FoobarReflect.hpp"
-
-#include "gtest/gtest.h"
+#pragma once
 
 #include <iostream>
+#include <string>
+#include "reflect.hpp"
 
-class FieldLogger {
+class ClassLogger {
 public:
-    FieldLogger(const std::string &prefix)
+    ClassLogger(const std::string &prefix)
         : prefix(prefix)
     {
     }
@@ -27,14 +26,8 @@ public:
 
     template<typename T>
     inline static void log(const T &val, const std::string &prefix = "") {
-        FieldLogger logger(prefix);
+        ClassLogger logger(prefix);
         T::reflect(val, logger);
         std::cout << std::endl;
     }
 };
-
-TEST(foobar, logging) {
-    example::foo::Foobar foobar("blah", 1, 2, "boop", 3, 4);
-    FieldLogger::log(foobar);
-}
-

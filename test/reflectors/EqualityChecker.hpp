@@ -1,7 +1,7 @@
-#include "Foobar.hpp"
-#include "FoobarReflect.hpp"
+#pragma once
 
-#include "gtest/gtest.h"
+#include <string>
+#include "reflect.hpp"
 
 class FieldEqualityChecker {
 public:
@@ -25,17 +25,7 @@ public:
     bool result= true;
 };
 
-template<typename T>
-bool operator==(const T &a, const T &b) {
+template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
+inline bool operator==(const T &a, const T &b) {
     return FieldEqualityChecker::equals(a, b);
-}
-
-TEST(foobar, equals) {
-    example::foo::Foobar foobar1("blah", 1, 2, "boop", 3, 4);
-    example::foo::Foobar foobar2("blah", 1, 2, "boop", 3, 4);
-
-    ASSERT_TRUE(foobar1 == foobar2);
-
-    foobar2.foobaz.m = "bip";
-    ASSERT_FALSE(foobar1 == foobar2);
 }
