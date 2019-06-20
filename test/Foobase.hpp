@@ -16,7 +16,7 @@ namespace example {
 
             virtual ~Foobase() = default;
 
-            REFLECT_DECL(Foobase);
+            REFLECT_DECL();
 
             std::string a;
             uint32_t b = 0;

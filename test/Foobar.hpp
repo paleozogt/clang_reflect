@@ -14,7 +14,7 @@ namespace example {
 
             ~Foobar() override = default;
 
-            REFLECT_DECL(Foobar);
+            REFLECT_DECL();
 
             std::string getD() const { return d; }
             void setD(const std::string &val) { d = val; }

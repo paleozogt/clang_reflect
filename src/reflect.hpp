@@ -4,7 +4,7 @@
 #include <functional>
 #include <type_traits>
 
-#define REFLECT_DECL(clazz)                                   \
+#define REFLECT_DECL()                                        \
     template<typename T, typename F>                          \
     static void reflect(T &o, F &f);                          \
                                                               \
