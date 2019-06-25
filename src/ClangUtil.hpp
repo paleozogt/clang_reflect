@@ -96,7 +96,9 @@ namespace clang {
     inline std::vector<std::string> getClangArgs(const std::vector<std::string> &clangArgs) {
         std::vector<std::string> args;
         for (const auto &path : getSystemIncludePaths()) {
-            args.push_back("-I" + path);
+            if (!path.empty()) {
+                args.push_back("-I" + path);
+            }
         }
         for (const auto &arg : clangArgs) {
             args.push_back(arg);
