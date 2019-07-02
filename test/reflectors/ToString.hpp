@@ -14,12 +14,12 @@ public:
     std::ostream &stream;
 
     template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, const T &field) {
         stream << field << std::endl;
     }
 
     template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, const T &field) {
         stream << toString(field);
     }
 

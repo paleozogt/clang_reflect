@@ -19,6 +19,15 @@ namespace clang {
         return str;
     }
 
+    inline std::string getString(CX_CXXAccessSpecifier accessSpecifier) {
+        switch (accessSpecifier) {
+            case CX_CXXPublic:      return "public";
+            case CX_CXXProtected:   return "protected";
+            case CX_CXXPrivate:     return "private";
+            default:                return "invalid";
+        }
+    }
+
     template<typename F>
     inline void visitChildren(CXCursor parent, const F &f) {
         clang_visitChildren(parent, [](CXCursor cursor, CXCursor parent, CXClientData client_data) -> CXChildVisitResult {

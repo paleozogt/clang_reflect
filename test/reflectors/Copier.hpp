@@ -5,7 +5,7 @@
 class Copier {
 public:
     template<typename T>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &from, T &to) const {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, const T &from, T &to) const {
         to = from;
     }
 

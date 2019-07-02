@@ -6,12 +6,12 @@
 class FieldEqualityChecker {
 public:
     template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field1, const T &field2) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, const T &field1, const T &field2) {
         result = result && (field1 == field2);
     }
 
     template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field1, const T &field2) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, const T &field1, const T &field2) {
         result = result && equals(field1, field2);
     }
 

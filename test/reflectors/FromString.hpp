@@ -14,7 +14,7 @@ public:
     std::istream &stream;
 
     template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, T &field) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, T &field) {
         std::string line;
         std::getline(stream, line);
 
@@ -23,11 +23,11 @@ public:
     }
 
     template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, T &field) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, T &field) {
         field = fromStream<T>(stream);
     }
 
-    void operator()(const std::string &name, const std::string &type, const std::string &comment, std::string &field) {
+    void operator()(const std::string &name, const std::string &type, const std::string &access, const std::string &comment, std::string &field) {
         std::getline(stream, field);
     }
 
