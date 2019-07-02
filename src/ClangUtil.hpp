@@ -13,7 +13,8 @@
 
 namespace clang {
     inline std::string getString(CXString cxstring) {
-        std::string str = clang_getCString(cxstring);
+        const char *cstring = clang_getCString(cxstring);
+        std::string str = cstring ? cstring : "";
         clang_disposeString(cxstring);
         return str;
     }

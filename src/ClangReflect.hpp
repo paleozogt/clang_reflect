@@ -191,7 +191,9 @@ namespace clang {
                        << "f("
                        << "\"" << spelling << "\""
                        << ", "
-                       << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\"";
+                       << "\"" << getString(clang_getTypeSpelling(clang_getCursorType(field))) << "\""
+                       << ", "
+                       << "\"" << util::escapeString(getString(clang_Cursor_getBriefCommentText(field))) << "\"";
                 for (int idx = 0; idx < numParams; idx++) {
                     stream << ", o" << idx+1 << "." << spelling;
                 }

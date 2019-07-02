@@ -27,8 +27,20 @@ namespace example {
             void setF(const float &val) { f = val; }
 
         protected:
+            /**
+             * This is d.
+             *
+             * \brief here is the "brief" text about d
+             */
             std::string d;
+
+            /** This is e. */
             uint32_t e = 0;
+
+            /**
+             * This is f. It's a float.
+             * Blah blah blah.
+             */
             float f = 0;
 
         public:

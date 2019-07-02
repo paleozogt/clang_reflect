@@ -5,7 +5,7 @@
 class Clearer {
 public:
     template<typename T>
-    void operator()(const std::string &name, const std::string &type, T &field) const {
+    void operator()(const std::string &name, const std::string &type, const std::string &comment, T &field) const {
         field = T();
     }
 

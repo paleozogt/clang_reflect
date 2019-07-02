@@ -14,13 +14,13 @@ public:
     std::string prefix;
 
     template<class T, typename std::enable_if<!reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const T &field) const {
+    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field) const {
         std::cout << prefix << (prefix.empty() ? "" : ".")
                   << name << " " << type << " \"" << field << "\"" << std::endl;
     }
 
     template<class T, typename std::enable_if<reflect::is_reflectable<T>::value>::type* = nullptr>
-    void operator()(const std::string &name, const std::string &type, const T &field) const {
+    void operator()(const std::string &name, const std::string &type, const std::string &comment, const T &field) const {
         log(field, name);
     }
 
