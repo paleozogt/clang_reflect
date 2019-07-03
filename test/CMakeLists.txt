@@ -1,5 +1,5 @@
 include(CTest)
-include(../cmake/UseClangReflect.cmake)
+include(${PROJECT_BINARY_DIR}/share/clang_reflect/UseClangReflect.cmake)
 
 # gtest
 add_library(${PROJECT_NAME}_gtest STATIC
@@ -11,9 +11,9 @@ target_include_directories(${PROJECT_NAME}_gtest PUBLIC
 )
 
 # generate reflection
-clang_reflect(Foobase.hpp ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
-clang_reflect(Foobaz.hpp  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
-clang_reflect(Foobar.hpp  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test)
+clang_reflect(Foobase.hpp)
+clang_reflect(Foobaz.hpp )
+clang_reflect(Foobar.hpp )
 
 # test runner
 file(GLOB_RECURSE test_srcs *.cpp)

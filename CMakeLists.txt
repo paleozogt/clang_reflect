@@ -15,7 +15,17 @@ set(ENABLE_STATIC         STATIC CACHE BOOL   "static libs")
 add_definitions(-D_CINDEX_LIB_)
 add_subdirectory(libs/llvm/llvm)
 
+# copy client files into a structure
+# that the use-file expects so that
+# we can use it like a client would
+#
+configure_file(src/reflect.hpp 
+               include/clang_reflect/reflect.hpp COPYONLY)
+configure_file(cmake/UseClangReflect.cmake 
+               share/clang_reflect/UseClangReflect.cmake COPYONLY)
+
 add_executable(clang_reflect src/ClangReflect.cpp)
+set_target_properties(clang_reflect PROPERTIES RUNTIME_OUTPUT_DIRECTORY bin)
 target_link_libraries(clang_reflect PUBLIC libclang)
 target_compile_options(clang_reflect PUBLIC -DVERSION=${VERSION})
 target_include_directories(clang_reflect PUBLIC 
