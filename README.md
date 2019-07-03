@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/paleozogt/clang_reflect/_apis/build/status/paleozogt.clang_reflect?branchName=master)](https://dev.azure.com/paleozogt/clang_reflect/_build/latest?definitionId=2&branchName=master)
+
 # Clang Reflect
 
 C++ lacks reflection, so its very hard to build things like inspection or serialization into classes.

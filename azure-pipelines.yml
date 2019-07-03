@@ -1,0 +1,119 @@
+trigger:
+    - "*"
+
+jobs:
+    - job: linux
+      timeoutInMinutes: 0
+      pool:
+          vmImage: ubuntu-16.04
+      strategy:
+          maxParallel: 10
+          matrix:
+            x86:
+                arch: x86
+                containerImage: dockcross/manylinux1-x86:latest
+                python: /opt/python/cp27-cp27mu/bin/python
+            x86_64:
+                arch: x86_64
+                containerImage: dockcross/manylinux1-x64:latest
+                python: /opt/python/cp27-cp27mu/bin/python
+            arm64:
+                arch: arm64
+                containerImage: dockcross/linux-arm64:latest
+                python: /usr/bin/python
+            armv6:
+                arch: armv6
+                containerImage: dockcross/linux-armv6:latest
+                python: /usr/bin/python
+            armv7:
+                arch: armv7
+                containerImage: dockcross/linux-armv7:latest
+                python: /usr/bin/python
+            armv7a:
+                arch: armv7a
+                containerImage: dockcross/linux-armv7a:latest
+                python: /usr/bin/python
+      steps:
+          # setup
+          - script: docker run --rm --privileged multiarch/qemu-user-static:register --reset
+          - script: git submodule sync && git submodule update --init --recursive && git status
+          - script: mkdir .build
+
+          # bootstrap a virtualenv
+          - script: pip install --system -t .build/pips virtualenv
+          - script: docker run --rm -w$PWD -v$HOME:$HOME -ePYTHONPATH=.build/pips $CONTAINERIMAGE $PYTHON -m virtualenv .build/venv
+          - script: docker run --rm -w$PWD -v$HOME:$HOME $CONTAINERIMAGE .build/venv/bin/pip install cmake==3.10.3
+          - script: echo 'source ./venv/bin/activate; $@' > .build/venv_run; chmod +x .build/venv_run
+
+          # configure
+          - script: docker run --rm -w$PWD -v$HOME:$HOME $CONTAINERIMAGE ./venv_run cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=../dist
+            workingDirectory: .build
+
+          # build
+          - script: docker run --rm -w$PWD -v$HOME:$HOME $CONTAINERIMAGE ./venv_run make -j 16 clang_reflect install_clang_reflect
+            workingDirectory: .build
+
+          # save artifacts
+          - task: PublishBuildArtifacts@1
+            inputs:
+                artifactName: clang_reflect-linux-$(arch)
+                pathtoPublish: dist
+
+          # test
+          - script: docker run --rm -w$PWD -v$HOME:$HOME $CONTAINERIMAGE ./venv_run make -j 16 check_clang_reflect
+            workingDirectory: .build
+
+    - job: mac
+      timeoutInMinutes: 0
+      pool:
+          vmImage: xcode9-macos10.13
+      strategy:
+          maxParallel: 10
+      steps:
+          - script: git submodule sync && git submodule update --init --recursive && git status
+          - script: mkdir .build
+          - script: cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=../dist
+            workingDirectory: .build
+          - script: make -j 16 clang_reflect install_clang_reflect
+            workingDirectory: .build
+          - task: PublishBuildArtifacts@1
+            inputs:
+                artifactName: clang_reflect-mac-x86_64
+                pathtoPublish: dist
+          - script: make -j 16 check_clang_reflect
+            workingDirectory: .build
+
+    - job: win
+      timeoutInMinutes: 0
+      pool:
+          vmImage: vs2017-win2016
+      strategy:
+          maxParallel: 10
+          matrix:
+            x86_64:
+                arch: x86_64
+                msarch: x64
+            x86:
+                arch: x86
+                msarch: x86
+      steps:
+          # setup
+          - task: BatchScript@1
+            inputs:
+              filename: C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\VsDevCmd.bat
+              arguments: -no_logo -arch=$(msarch)
+              modifyEnvironment: true      
+          - script: choco install -y jom
+          - script: git submodule sync && git submodule update --init --recursive && git status
+          - script: mkdir .build
+
+          - script: cmake .. -G "NMake Makefiles JOM" -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=../dist
+            workingDirectory: .build
+          - script: jom -j 16 clang_reflect install_clang_reflect
+            workingDirectory: .build
+          - task: PublishBuildArtifacts@1
+            inputs:
+                artifactName: clang_reflect-win-$(arch)
+                pathtoPublish: dist
+          - script: jom -j 16 check_clang_reflect
+            workingDirectory: .build
