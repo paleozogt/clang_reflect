@@ -99,6 +99,13 @@ namespace clang {
             }
         }
 
+        std::string getFqMacroName(const std::string &fqname) {
+            return util::transform(
+                util::split(util::replace(fqname, "::", "_"), '_').back(),
+                ::toupper
+            ) + "_FQNAME";
+        }
+
         void generateReflectorPreamble(std::ostream &stream, CXCursor cursor) {
             // header pragma
             stream << "#pragma once"
@@ -137,12 +144,21 @@ namespace clang {
             stream << "#include <type_traits>" 
                    << std::endl
                    << std::endl;
+
+            // macro for fully-qualified class name
+            const std::string fqname = getString(clang_getTypeSpelling(clang_getCursorType(cursor)));
+            stream << "#define "
+                   << getFqMacroName(fqname)
+                   << " "
+                   << fqname
+                   << std::endl << std::endl;
         }
 
         void generateReflector(std::ostream &stream, CXCursor cursor, int indent, int numParams) {
             auto bases = getChildrenOfKind(cursor, CXCursor_CXXBaseSpecifier);
             auto namespaces = getNamespaces(cursor);
             const std::string reflectMethod = "reflect";
+            const std::string fqname = getString(clang_getTypeSpelling(clang_getCursorType(cursor)));
 
             // function definition
             stream << util::indent(indent) << "template<";
@@ -152,8 +168,7 @@ namespace clang {
             stream << "typename F>" << std::endl
                    << util::indent(indent)
                    << "void " 
-                   << getString(clang_getTypeSpelling(clang_getCursorType(cursor))) << "::"
-                   << reflectMethod << "(";
+                   << getFqMacroName(fqname) << "::" << reflectMethod << "(";
             for (int idx = 0; idx < numParams; idx++) {
                 stream << "T" << idx+1 << " &o" << idx+1 << ", ";
             }

@@ -22,6 +22,13 @@ namespace util {
         }).base(), s.end());
     }
 
+    // return-val version of std::transform
+    template<typename F>
+    inline std::string transform(std::string str, F func) {
+        std::transform(str.begin(), str.end(), str.begin(), func);
+        return str;
+    }
+
     inline std::string replace(std::string str, const std::string &findstr, const std::string &replstr) {
         size_t pos = str.find(findstr);
         while (pos != std::string::npos) {
