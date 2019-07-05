@@ -126,6 +126,9 @@ namespace clang {
             paths.push_back(line);
             std::getline(stream, line);
         }
+
+        options.push_back("-nostdinc");
+        options.push_back("-nostdinc++");
 #endif
 
         for (const auto &path : paths) {
