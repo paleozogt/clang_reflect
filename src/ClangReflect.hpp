@@ -63,7 +63,10 @@ namespace clang {
             unsigned numDiagnostics = clang_getNumDiagnostics(tu);
             if (numDiagnostics > 0) {
                 auto diagnostic = clang_getDiagnostic(tu, 0);
-                throw std::runtime_error(getString(clang_formatDiagnostic(diagnostic, diagnosticOptions)));
+                auto severity = clang_getDiagnosticSeverity(diagnostic);
+                if (severity > CXDiagnostic_Warning) {
+                    throw std::runtime_error(getString(clang_formatDiagnostic(diagnostic, diagnosticOptions)));
+                }
             }
 
             auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);
