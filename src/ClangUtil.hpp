@@ -63,12 +63,26 @@ namespace clang {
         return classes;
     }
 
-    inline std::vector<std::string> getSystemIncludePaths() {
-        std::vector<std::string> paths;
+    inline std::vector<std::string> getGccOptions(const std::string &optionsLine) {
+        std::vector<std::string> options;
+
+        // note that out of expediency we're assuming that
+        // the options themselves don't have spaces
+        options = util::split(optionsLine, ' ');
+        for (auto &option : options) {
+            option = util::replace(option, "'", "");
+        }
+
+        return options;
+    }
+
+    inline std::vector<std::string> getCompilerFlags() {
+        std::vector<std::string> options, paths;
 
 #if defined(WIN32)
         paths = util::split(util::getEnv("INCLUDE"), ';');
 #else
+        const static std::string COLLECT_GCC_OPTIONS = "COLLECT_GCC_OPTIONS=";
         const static std::string SEARCH_START = "#include <...> search starts here:";
         const static std::string SEARCH_END   = "End of search list.";
 
@@ -90,6 +104,9 @@ namespace clang {
         std::string line;
         std::ifstream stream(output, std::ios_base::in|std::ios_base::binary);
         while (stream && line != SEARCH_START) {
+            if (line.find(COLLECT_GCC_OPTIONS) == 0) {
+                options = getGccOptions(util::replace(line, COLLECT_GCC_OPTIONS, ""));
+            }
             std::getline(stream, line);
         }
         std::getline(stream, line);
@@ -100,21 +117,21 @@ namespace clang {
         }
 #endif
 
-        return paths;
+        for (const auto &path : paths) {
+            if (!path.empty()) {
+                options.push_back("-I" + path);
+            }
+        }
+
+        return options;
     }
 
     inline std::vector<std::string> getClangArgs(const std::vector<std::string> &clangArgs) {
-        std::vector<std::string> args;
-        for (const auto &path : getSystemIncludePaths()) {
-            if (!path.empty()) {
-                args.push_back("-I" + path);
-            }
-        }
+        std::vector<std::string> args = getCompilerFlags();
         for (const auto &arg : clangArgs) {
             args.push_back(arg);
         }
         return args;
     }
-
 
 }
