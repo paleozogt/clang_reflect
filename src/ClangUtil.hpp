@@ -88,35 +88,38 @@ namespace clang {
     }
 
     inline std::vector<std::string> getCompilerFlags() {
-        std::vector<std::string> options, paths;
+        std::vector<std::string> flags, paths;
 
 #if defined(WIN32)
         paths = util::split(util::getEnv("INCLUDE"), ';');
 #else
         const static std::string COLLECT_GCC_OPTIONS = "COLLECT_GCC_OPTIONS=";
+        const static std::string TARGET = "Target:";
         const static std::string SEARCH_START = "#include <...> search starts here:";
         const static std::string SEARCH_END   = "End of search list.";
 
-        char input[FILENAME_MAX] = "";
         char output[FILENAME_MAX] = "";
         tmpnam(output);
-        tmpnam(input);
-
-        std::ofstream dummy(input, std::ios_base::out|std::ios_base::binary);
-        dummy << std::endl;
-        dummy.close();
 
         std::string gpp = util::getEnv("CXX", util::getEnv("CC", "g++"));
 
         char cmd[FILENAME_MAX*4] = "";
-        std::snprintf(cmd, sizeof(cmd), "%s -E -x c++ -v %s > %s 2> %s", gpp.data(), input, output, output);
+        std::snprintf(cmd, sizeof(cmd), "%s -E -x c++ -v %s > %s 2> %s", gpp.data(), "/dev/null", "/dev/null", output);
         int exitCode = std::system(cmd);
 
         std::string line;
         std::ifstream stream(output, std::ios_base::in|std::ios_base::binary);
         while (stream && line != SEARCH_START) {
             if (line.find(COLLECT_GCC_OPTIONS) == 0) {
-                options = getGccOptions(util::replace(line, COLLECT_GCC_OPTIONS, ""));
+                for (const auto &flag : getGccOptions(util::replace(line, COLLECT_GCC_OPTIONS, ""))) {
+                    if (flag.find("-march") == 0 || flag.find("-mfloat-abi") == 0) {
+                        flags.push_back(flag);
+                    }
+                }
+            } else if (line.find(TARGET) == 0) {
+                line = util::replace(line, TARGET, "");
+                util::ltrim(line, ::isspace);
+                flags.push_back("--target=" + line);
             }
             std::getline(stream, line);
         }
@@ -127,17 +130,17 @@ namespace clang {
             std::getline(stream, line);
         }
 
-        options.push_back("-nostdinc");
-        options.push_back("-nostdinc++");
+        flags.push_back("-nostdinc");
+        flags.push_back("-nostdinc++");
 #endif
 
         for (const auto &path : paths) {
             if (!path.empty()) {
-                options.push_back("-I" + path);
+                flags.push_back("-I" + path);
             }
         }
 
-        return options;
+        return flags;
     }
 
     inline std::vector<std::string> getClangArgs(const std::vector<std::string> &clangArgs) {
