@@ -49,10 +49,11 @@ namespace clang {
 
             CXIndex index = clang_createIndex(0, 0);
             const unsigned tuOptions = CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_SkipFunctionBodies;
-            CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
-                                                              clangArgs.data(), clangArgs.size(),
-                                                              nullptr, 0,
-                                                              tuOptions);
+            CXTranslationUnit tu;
+            CXErrorCode err = clang_parseTranslationUnit2(index, inputFile.data(),
+                                                          clangArgs.data(), clangArgs.size(),
+                                                          nullptr, 0,
+                                                          tuOptions, &tu);
 
             const unsigned diagnosticOptions = CXDiagnostic_DisplaySourceLocation |
                                                CXDiagnostic_DisplayColumn |
@@ -68,6 +69,10 @@ namespace clang {
                 if (severity > CXDiagnostic_Warning) {
                     throw std::runtime_error(getString(clang_formatDiagnostic(diagnostic, diagnosticOptions)));
                 }
+            }
+
+            if (err != CXError_Success) {
+                throw std::runtime_error(getString(err));
             }
 
             auto classes = getChildrenOfKind(clang_getTranslationUnitCursor(tu), CXCursor_ClassDecl);

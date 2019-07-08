@@ -28,6 +28,17 @@ namespace clang {
         }
     }
 
+    inline std::string getString(CXErrorCode code) {
+        switch (code) {
+            case CXError_Success:           return "CXError_Success";
+            case CXError_Failure:           return "CXError_Failure";
+            case CXError_Crashed:           return "CXError_Crashed";
+            case CXError_InvalidArguments:  return "CXError_InvalidArguments";
+            case CXError_ASTReadError:      return "CXError_ASTReadError";
+            default:                        return "CXError";
+        }
+    }
+
     template<typename F>
     inline void visitChildren(CXCursor parent, const F &f) {
         clang_visitChildren(parent, [](CXCursor cursor, CXCursor parent, CXClientData client_data) -> CXChildVisitResult {
