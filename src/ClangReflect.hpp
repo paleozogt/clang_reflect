@@ -48,10 +48,11 @@ namespace clang {
             }
 
             CXIndex index = clang_createIndex(0, 0);
+            const unsigned tuOptions = CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_SkipFunctionBodies;
             CXTranslationUnit tu = clang_parseTranslationUnit(index, inputFile.data(),
                                                               clangArgs.data(), clangArgs.size(),
                                                               nullptr, 0,
-                                                              CXTranslationUnit_DetailedPreprocessingRecord);
+                                                              tuOptions);
 
             const unsigned diagnosticOptions = CXDiagnostic_DisplaySourceLocation |
                                                CXDiagnostic_DisplayColumn |
