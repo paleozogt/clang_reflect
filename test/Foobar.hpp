@@ -2,6 +2,8 @@
 
 #include "Foobaz.hpp"
 
+#include "CppHeaders.hpp"
+
 namespace example {
     namespace foo {
         class Foobar : public Foobase {

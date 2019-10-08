@@ -5,6 +5,9 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
+
+#define diag_err_builtin_definition_msg "definition of builtin function"
 
 namespace clang {
     class ClangReflect {
@@ -47,8 +50,8 @@ namespace clang {
                 clangArgs[idx] = this->clangArgs[idx].data();
             }
 
-            CXIndex index = clang_createIndex(0, 0);
-            const unsigned tuOptions = CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_SkipFunctionBodies;
+            CXIndex index = clang_createIndex(1, 0);
+            const unsigned tuOptions = CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_SkipFunctionBodies | CXTranslationUnit_KeepGoing;
             CXTranslationUnit tu;
             CXErrorCode err = clang_parseTranslationUnit2(index, inputFile.data(),
                                                           clangArgs.data(), clangArgs.size(),
@@ -66,8 +69,9 @@ namespace clang {
             if (numDiagnostics > 0) {
                 auto diagnostic = clang_getDiagnostic(tu, 0);
                 auto severity = clang_getDiagnosticSeverity(diagnostic);
-                if (severity > CXDiagnostic_Warning) {
-                    throw std::runtime_error(getString(clang_formatDiagnostic(diagnostic, diagnosticOptions)));
+                std::string formattedDiag = getString(clang_formatDiagnostic(diagnostic, diagnosticOptions));
+                if (severity > CXDiagnostic_Warning && formattedDiag.find(diag_err_builtin_definition_msg) == std::string::npos) {
+                    throw std::runtime_error(formattedDiag);
                 }
             }
 
