@@ -12,7 +12,7 @@ namespace util {
             std::string arg = argv[idx];
 
             if (arg.find("--", 0) == 0) {
-                args[arg].push_back(argv[idx++]);
+                args[arg].push_back(argv[++idx]);
             } else if (arg.find('-', 0) == 0) {
                 args["-"].push_back(arg);
             } else {
