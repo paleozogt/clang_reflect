@@ -68,7 +68,8 @@ macro(clang_reflect file)
     # indirectly via a generated script.
     # 
     set(script_path ${CMAKE_CURRENT_BINARY_DIR}/gen${reflect_name}Reflect.cmake)
-    set(script "execute_process(COMMAND ${CLANG_REFLECT} ${CLANG_REFLECT_FLAGS} ${includes_join} ${relpath} RESULT_VARIABLE RESULT)\n")
+    set(script "set(ENV{CXX} ${CMAKE_CXX_COMPILER})\n")
+    set(script "${script}execute_process(COMMAND ${CLANG_REFLECT} ${CLANG_REFLECT_FLAGS} ${includes_join} ${relpath} RESULT_VARIABLE RESULT)\n")
     set(script "${script}if (NOT RESULT EQUAL 0)\n")
     set(script "${script}    message(FATAL_ERROR \"clang_reflect failed\")\n")
     set(script "${script}endif()\n")
