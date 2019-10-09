@@ -62,6 +62,11 @@ macro(clang_reflect file)
     set(target_includes $<TARGET_PROPERTY:${reflect_interface_target},INTERFACE_INCLUDE_DIRECTORIES>)
     set(includes_join "$<$<BOOL:${target_includes}>:-I$<JOIN:${target_includes}, -I>>")
 
+    # pass in the sysroot if we have one
+    if (CMAKE_SYSROOT)
+        set(CLANG_REFLECT_FLAGS "${CLANG_REFLECT_FLAGS} -I${CMAKE_SYSROOT}/usr/include")
+    endif()
+
     # generate a cmake script with the clang_reflect invocation.
     # using complex generator expressions ("output expressions") aren't
     # supported with add_custom_command(), so we have to do it
